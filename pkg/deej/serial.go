@@ -32,6 +32,8 @@ type SerialIO struct {
 	lastKnownNumSliders        int
 	currentSliderPercentValues []float32
 
+	lastSliderUpdate time.Time
+
 	sliderMoveConsumers []chan SliderMoveEvent
 }
 
@@ -254,6 +256,9 @@ func (sio *SerialIO) handleLine(logger *zap.SugaredLogger, line string) {
 		}
 	}
 
+	// check if update should be forced
+	updateAnyways := time.Since(sio.lastSliderUpdate) > 1*time.Second
+
 	// for each slider:
 	moveEvents := []SliderMoveEvent{}
 	for sliderIdx, stringValue := range splitLine {
@@ -280,7 +285,7 @@ func (sio *SerialIO) handleLine(logger *zap.SugaredLogger, line string) {
 		}
 
 		// check if it changes the desired state (could just be a jumpy raw slider value)
-		if util.SignificantlyDifferent(sio.currentSliderPercentValues[sliderIdx], normalizedScalar, sio.deej.config.NoiseReductionLevel) {
+		if updateAnyways || util.SignificantlyDifferent(sio.currentSliderPercentValues[sliderIdx], normalizedScalar, sio.deej.config.NoiseReductionLevel) {
 
 			// if it does, update the saved value and create a move event
 			sio.currentSliderPercentValues[sliderIdx] = normalizedScalar
@@ -298,6 +303,7 @@ func (sio *SerialIO) handleLine(logger *zap.SugaredLogger, line string) {
 
 	// deliver move events if there are any, towards all potential consumers
 	if len(moveEvents) > 0 {
+		sio.lastSliderUpdate = time.Now()
 		for _, consumer := range sio.sliderMoveConsumers {
 			for _, moveEvent := range moveEvents {
 				consumer <- moveEvent
