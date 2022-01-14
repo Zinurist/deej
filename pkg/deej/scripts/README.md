@@ -18,3 +18,4 @@ This document lists the various scripts in the project and their purposes.
 - [`build-dev.sh`](./linux/build-dev.sh): Builds deej for development purposes
 - [`build-release.sh`](./linux/build-release.sh): Builds deej for releases
 - [`build-all.sh`](./linux/build-all.sh): Helper script to build all variants
+- [`build-windows.sh`](./linux/build-windows.sh): Builds deej release for windows
